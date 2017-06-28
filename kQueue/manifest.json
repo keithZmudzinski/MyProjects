@@ -1,0 +1,19 @@
+{
+	"manifest_version": 2,
+	"name": "kQueue",
+	"version": "1.0",
+
+	"icons":{
+		"16": "arrow.png",
+		"32": "arrow.png",
+		"128": "arrow.png"
+	},
+	"background":{
+		"scripts": ["background.js"]
+	},
+	"permissions":[
+		"contextMenus", "tabs"
+	]
+
+
+}
