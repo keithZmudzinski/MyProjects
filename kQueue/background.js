@@ -3,16 +3,33 @@ tabID = 0;
 loaded = true;
 
 
-function addToQueue(info, tab){
-	songQueue.push(info.linkUrl);
+function onClickHandler(info, tab){
 	tabID = tab.id;
-	console.log("added song tabid = " + tab.id);
-	console.log(songQueue[songQueue.length-1] + " added to queue");
+	if(info.menuItemId == "addItem"){
+		songQueue.push(info.linkUrl);
+		console.log("added song tabid = " + tab.id);
+		console.log(songQueue[songQueue.length-1] + " added to queue");
+	}
+	else if (info.menuItemId == "downloadItem"){
+		if(info.mediaType == "video"){
+			dwnURL = "https://www.youtubeinmp3.com/fetch/?video="+info.pageUrl;
+		}
+		else{
+			dwnURL = "https://www.youtubeinmp3.com/fetch/?video="+info.linkUrl;
+		}
+		chrome.tabs.update(tabID, downloadVideo(dwnURL));
+	}
 
 }
-function updateURL(){
+function nextSong(){
 	var url = {
 		url: songQueue[0]
+	}
+	return url;
+}
+function downloadVideo(toDownloadURL){
+	var url = {
+		url: toDownloadURL
 	}
 	return url;
 }
@@ -26,7 +43,7 @@ function onUpdated(tabId, changeInfo, tab){
 	 	&& changeInfo.status == "complete"
 		&& loaded){
 			console.log("Song has ended");
-			chrome.tabs.update(tabID, updateURL());
+			chrome.tabs.update(tabID, nextSong());
 			songQueue.shift();
 			loaded = false;
 	}// determines when the next tab has finished loading and is playing music
@@ -37,8 +54,10 @@ function onUpdated(tabId, changeInfo, tab){
 		}
 }
 
-var menuItem = chrome.contextMenus.create({"title": "Add to queue", "contexts": ["link"],
-	"documentUrlPatterns": ["*://www.youtube.com/*"]});
+var addQItemMenu = chrome.contextMenus.create({"title": "Add to queue", "id": "addItem",
+ 	"contexts": ["link"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
+var downloadItemMenue = chrome.contextMenus.create({"title": "Download Video", "id": "downloadItem",
+ 	"contexts": ["link", "video"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 
-chrome.contextMenus.onClicked.addListener(addToQueue);
+chrome.contextMenus.onClicked.addListener(onClickHandler);
 chrome.tabs.onUpdated.addListener(onUpdated);
