@@ -12,7 +12,9 @@
 		"scripts": ["background.js"]
 	},
 	"permissions":[
-		"contextMenus", "tabs"
+		"contextMenus",
+		"tabs",
+		"downloads"
 	]
 
 
