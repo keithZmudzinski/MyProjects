@@ -1,9 +1,9 @@
-
 import mutagen
 import json
 import ntpath
 import urllib.request
 import urllib
+import requests
 import tkinter
 from tkinter import filedialog
 import os
@@ -28,52 +28,50 @@ def correctFileName(path):
     if choice == "yes":
         fName = input("Enter desired name: ")
         print(fName)
+    elif choice  == "no":
+        return fName
+    else:
+        print(choice)
+        return choice
     return fName
 
 def getSuggestions(fName):
-    # print("Track searched: " + fName.replace(" ","+"))
-    metadata = urllib.request.urlopen(\
-    "http://ws.audioscrobbler.com/2.0/?method=track.search\
-    &track=" + urllib.parse.quote(fName) +\
-    "&api_key=" + apiKey +\
-    "&limit=5"\
-    "&format=json")
-    metadata = metadata.read().decode('utf-8')
-    metadata = json.loads(metadata)
-    return metadata
+    data = {"grant_type":"client_credentials"}
+    client_id = "b5f570f1d6874974b0fdca654a24c430"
+    client_secret = "5aa2906ccbd24e0185f67c8e1043c592"
+    url = "https://accounts.spotify.com/api/token"
+
+    auth_response = requests.post(url, data=data, auth =(client_id, client_secret))
+    access_token = auth_response.json()['access_token']
+
+    payload = {'q': fName, 'type':'track','limit':5}
+    metadata = requests.get("https://api.spotify.com/v1/search",\
+    headers = {'Authorization': "Bearer "+access_token},\
+    params = payload)
+
+    return metadata.json()
 
 def printSuggestions(metadata):
-    numResults = int(metadata['results']['opensearch:totalResults'])
+    numResults = len(metadata['tracks']['items'])
     if numResults == 0:
         print("No results found")
         return False
-    if numResults > 5:
-        numResults = 5
     for suggestion in range(numResults):
         print(str(suggestion+1) + ". " +\
-            metadata['results']['trackmatches']['track'][suggestion]['name'] +\
-            ", by " +\
-            metadata['results']['trackmatches']['track'][suggestion]['artist'])
+            metadata['tracks']['items'][suggestion]['name'] +\
+            " by " +\
+            metadata['tracks']['items'][suggestion]['artists'][0]['name'] +\
+            ", from " +\
+            metadata['tracks']['items'][suggestion]['album']['name']
+        )
     return True
 
 def editFile(filePath, metadata, songIndex):
-    songName = metadata['results']['trackmatches']['track'][songIndex]['name']
-    artist = metadata['results']['trackmatches']['track'][songIndex]['artist']
-    # print("SongName used to find album: " + songName)
-    # print("ArtistName used to find album: " + artist)
-    album = urllib.request.urlopen(\
-    "http://ws.audioscrobbler.com/2.0/?method=track.getInfo\
-    &track=" + urllib.parse.quote(songName) +\
-    "&artist=" + urllib.parse.quote(artist) +\
-    "&api_key=" + apiKey +\
-    "&format=json")
-    album = album.read().decode('utf-8')
-    album = json.loads(album)
-    try:
-        album = album['track']['album']['title']
-    except KeyError:
-        print("Album not found, album set to " + artist)
-        album = artist
+    songName = metadata['tracks']['items'][songIndex]['name']
+    artist = metadata['tracks']['items'][songIndex]['artists'][0]['name']
+    album = metadata['tracks']['items'][songIndex]['album']['name']
+
+
 
     os.chmod(filePath,0o775) #gives permission to save changes
     audioFile = mutagen.File(filePath, easy = True)
@@ -82,8 +80,8 @@ def editFile(filePath, metadata, songIndex):
         audioFile.tags['artist'] = artist
         audioFile.tags['album'] = album
         audioFile.save()
-        print("Title set to: " + songName, end = '')
-        print(", Artist set to: " + artist, end = '')
-        print(", Album set to: " + album)
+        print("Title: " + songName, end = '')
+        print(", Artist: " + artist, end = '')
+        print(", Album: " + album)
     except AttributeError:
         print("File type not supported")
