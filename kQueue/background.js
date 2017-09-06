@@ -1,7 +1,7 @@
 songQueue = []
 tabID = 0;
 loaded = true;
-
+var youtubeKey = "AIzaSyCP0UNlO9_N1Pq13E6Rl8gIwAjnF_zqNO4"
 
 //Creates url objects used in updating tab url
 function makeNextSong(){
@@ -14,9 +14,37 @@ function makeNextSong(){
 function makeDwnObj(url){
 	var obj = {
 		url: url,
-		saveAs: true
+		saveAs: true,
+		method: "GET"
 	}
 	return obj;
+}
+var HttpClient = function() {
+    this.get = function(aUrl, aCallback) {
+        var anHttpRequest = new XMLHttpRequest();
+        anHttpRequest.onreadystatechange = function() {
+            if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
+                aCallback(anHttpRequest.responseText);
+        }
+
+        anHttpRequest.open( "GET", aUrl, true );
+		// anHttpRequest.setRequestHeader("Referer", "http://www.youtubeinmp3.com/download/");
+        anHttpRequest.send( null );
+    }
+}
+
+function parseURL(json){
+	url = json['link'];
+	chrome.tabs.update(tabID, makeDwnObj(url));
+}
+function getID(url){
+	id = url.substring(url.search("v=")+2);
+	timeMarker = id.search("&t=");
+	if(timeMarker != -1){
+		id = id.substring(0,timeMarker);
+	}
+	console.log("ID of video to display: " + id);
+	return id
 }
 //determines which context Menu clicked, acts accordingly
 function onClickHandler(info, tab){
@@ -29,14 +57,62 @@ function onClickHandler(info, tab){
 	else if (info.menuItemId == "downloadItem"){
 		//allows for downloading suggested videos or current video
 		if(info.mediaType == "video"){
-			dwnURL = "http://www.youtubeinmp3.com/fetch/?video="+info.pageUrl;
+			dwnURL = info.pageUrl;
 		}
 		else{
-			dwnURL = "http://www.youtubeinmp3.com/fetch/?video="+info.linkUrl;
+			dwnURL = info.linkUrl;
 		}
-		chrome.downloads.download(makeDwnObj(dwnURL));
+		var client = new HttpClient();
+		client.get(("http://www.youtubeinmp3.com/fetch/?format=JSON&video=" + dwnURL), function(response){
+			console.log("Response: " + response);
+			var response = JSON.parse(response);
+			link = response.link;
+			chrome.downloads.download(makeDwnObj(link));
+		});
+	}
+	else if (info.menuItemId == "clearItems"){
+		songQueue = [];
+	}
+	else if (info.menuItemId == "showItems"){
+		if(songQueue.length != 0){
+			var queueItems = [];
+			var songID;
+			var videoData;
+			var stringItems = "";
+			var request = new HttpClient();
+			for (var i = 0; i < songQueue.length; i++){
+				songID = getID(songQueue[i]);
+				request.get(("https://www.googleapis.com/youtube/v3/videos?id=" +
+				getID(songQueue[i]) +
+				"&key=" + youtubeKey +
+				"&part=snippet"), function(response){
+					var response = JSON.parse(response);
+					queueItems.push('• ' + response["items"][0]["snippet"]["title"] + '\n');
+					stringItems += '• ' + response["items"][0]["snippet"]["title"] + '\n';
+				if(queueItems.length == songQueue.length){
+					var notification = {
+						type: "basic",
+						iconUrl: "arrow.png", //response["items"][0]["snippet"]["thumbnails"]["default"]["url"],
+						title: "Queued Songs",
+						message: stringItems
+					}
+					chrome.notifications.create("qNoti", notification);
+				}
+				})
+			}
+		}
+		else{
+			var notification = {
+				type: "basic",
+				iconUrl: "arrow.png",
+				title: "Queued Songs",
+				message: "No songs queued"
+			}
+			chrome.notifications.create("qNoti", notification);
+		}
 	}
 }
+
 //Checks if the tab that signals update is
 //	the tab user has queued a video in
 function onUpdated(tabId, changeInfo, tab){
@@ -61,8 +137,12 @@ function onUpdated(tabId, changeInfo, tab){
 //creates the context Menu objects
 var addQItemMenu = chrome.contextMenus.create({"title": "Add to queue", "id": "addItem",
  	"contexts": ["link"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
-var downloadItemMenue = chrome.contextMenus.create({"title": "Download Video", "id": "downloadItem",
+var downloadItemMenu = chrome.contextMenus.create({"title": "Download Video", "id": "downloadItem",
  	"contexts": ["link", "video"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
+var clearQ = chrome.contextMenus.create({"title": "Clear Queue", "id": "clearItems",
+	"documentUrlPatterns": ["*://www.youtube.com/*"]});
+var showQ = chrome.contextMenus.create({"title": "Display Queue", "id": "showItems",
+	"contexts": ["link", "video", "page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 
 chrome.contextMenus.onClicked.addListener(onClickHandler);
 chrome.tabs.onUpdated.addListener(onUpdated);

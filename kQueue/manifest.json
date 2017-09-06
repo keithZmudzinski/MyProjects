@@ -14,7 +14,8 @@
 	"permissions":[
 		"contextMenus",
 		"tabs",
-		"downloads"
+		"downloads",
+		"notifications"
 	]
 
 
