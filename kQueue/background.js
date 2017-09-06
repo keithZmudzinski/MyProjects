@@ -92,8 +92,8 @@ function onClickHandler(info, tab){
 				if(queueItems.length == songQueue.length){
 					var notification = {
 						type: "basic",
-						iconUrl: "arrow.png", //response["items"][0]["snippet"]["thumbnails"]["default"]["url"],
-						title: "Queued Songs",
+						iconUrl: "menu.png", //response["items"][0]["snippet"]["thumbnails"]["default"]["url"],
+						title: "Queued Items",
 						message: stringItems
 					}
 					chrome.notifications.create("qNoti", notification);
@@ -104,9 +104,9 @@ function onClickHandler(info, tab){
 		else{
 			var notification = {
 				type: "basic",
-				iconUrl: "arrow.png",
-				title: "Queued Songs",
-				message: "No songs queued"
+				iconUrl: "menu.png",
+				title: "Queued Items",
+				message: "• No items queued"
 			}
 			chrome.notifications.create("qNoti", notification);
 		}
@@ -140,7 +140,7 @@ var addQItemMenu = chrome.contextMenus.create({"title": "Add to queue", "id": "a
 var downloadItemMenu = chrome.contextMenus.create({"title": "Download Video", "id": "downloadItem",
  	"contexts": ["link", "video"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 var clearQ = chrome.contextMenus.create({"title": "Clear Queue", "id": "clearItems",
-	"documentUrlPatterns": ["*://www.youtube.com/*"]});
+	"contexts": ["link", "video", "page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 var showQ = chrome.contextMenus.create({"title": "Display Queue", "id": "showItems",
 	"contexts": ["link", "video", "page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 
