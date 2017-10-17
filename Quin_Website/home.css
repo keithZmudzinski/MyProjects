@@ -1,0 +1,101 @@
+
+*{
+margin: 0;
+padding: 0;
+border: 0;
+outline: 0;
+font-size: 100%;
+vertical-align: baseline;
+background: transparent;
+}
+#header {
+color:white;
+background-color:#33aeff;
+font-size:1.15em;
+height:25px;
+letter-spacing:4px;
+width:100%;
+font-family:"Impact";
+text-indent:20px;
+}
+#header_right{
+float:right;
+color:white;
+font-weight:normal;
+letter-spacing:1px;
+font-family:"Times New Roman";
+
+}
+.navBar_li{
+display:inline-block;
+color:black;
+text-align:center;
+
+}
+#navBar_ul a {
+text-decoration:none;
+color:black;
+display:block;
+padding:10px 15px;
+}
+#navBar_ul {
+padding:0px;
+margin:0px;
+list-style-type:none;
+font-size:1.05em;
+}
+
+#homeImg_top {
+color:white;
+position:relative;
+font-size:150%;
+}
+#homeImg_top img{
+width:100%;
+}
+#homeImg_top h2{
+position:absolute;
+bottom:40px;
+width:100%;
+text-align:center;
+word-spacing:200px;
+}
+#quinAbout_header{
+height:50px;
+background-color:#33aeff;
+color:white;
+font-family:"Impact";
+font-size:2.2em;
+text-align:center;
+letter-spacing:8px;
+margin-top:-7px;
+}
+#quinAbout_body {
+width:250px;
+margin:auto;
+margin-top:100px;
+text-align:margin;
+display:inline-block;
+}
+#quinAbout_img1{
+display:inline-block;
+margin-top:100px;
+width:250px;
+}
+#quinAbout_img2{
+display:inline-block;
+margin-top:100px;
+width:250px;
+}
+#quinAbout{
+width:1200px;
+margin:auto;
+text-align:center;
+}
+
+
+
+
+
+
+
