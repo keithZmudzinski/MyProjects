@@ -1,0 +1,4 @@
+(echo A && echo B) || (echo C && echo D)
+(echo A && echo B || (echo C && echo D)
+((((ls && echo first) && echo second) || (echo apart)) && echo done)
+exit

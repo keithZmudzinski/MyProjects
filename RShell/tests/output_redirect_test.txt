@@ -1,0 +1,9 @@
+echo "Output Redirect Test" > newFile
+cat newFile > newFile1
+cat newFile1
+sort textFile > sortedText 
+cat sortedText > blankFile > copyOfSortedText
+cat blankFile
+cat copyOfSortedText
+rm newFile newFile1 sortedText blankFile copyOfSortedText
+exit

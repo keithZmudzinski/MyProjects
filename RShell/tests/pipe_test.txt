@@ -1,0 +1,5 @@
+cat < textFile | tr A-Z a-z | tee newOutputFile | tr a-z A-Z > newOutputFile1
+cat newOutputFile newOutputFile1
+sort textFile | more | tee newFile
+rm newOutputFile newOutputFile1 newFile
+exit

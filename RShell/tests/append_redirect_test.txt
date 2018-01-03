@@ -1,0 +1,10 @@
+echo "Append Redirect Test" >> newFile
+echo "Second Redirect Test" >> newFile1
+cat newFile newFile1
+cat newFile >> newFile1
+cat newFile1
+echo "Chained Redirect Test" >> newFile >> newFile1
+cat newFile
+cat newFile1
+rm newFile newFile1
+exit

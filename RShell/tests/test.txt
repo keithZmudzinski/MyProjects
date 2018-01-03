@@ -1,0 +1,11 @@
+test -e test.txt
+test test.txt
+test -f test.txt
+test -d test.txt
+test -f test.txt
+[ -e test.txt ]
+[ test.txt ]
+[ -f test.txt ]
+[ -d test.txt ]
+[ help.txt ]
+exit

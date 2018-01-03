@@ -1,0 +1,5 @@
+ls
+echo hello
+mkdir test
+rm -rf test
+exit

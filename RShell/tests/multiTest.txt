@@ -1,0 +1,6 @@
+ls -a && pwd || ls; ls
+ls; ls; ls; ls
+ls && ls && ls && ls
+ls || ls || ls || ls
+ls; ls && ls || ls; ls && ls && ls
+exit
