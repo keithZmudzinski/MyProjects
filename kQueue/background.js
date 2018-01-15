@@ -194,9 +194,9 @@ function onUpdated(tabId, changeInfo, tab){
 	 	&& changeInfo.status == "complete"
 		&& loaded){
 			console.log("Song has ended");
+			loaded = false;
 			chrome.tabs.update(tabID, makeNextSong());
 			songQueue.shift();
-			loaded = false;
 	}// determines when the next tab has finished loading and is playing music
 	else if(changeInfo.audible && tabId == tabID){
 			loaded = true;
