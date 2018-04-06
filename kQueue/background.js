@@ -1,8 +1,10 @@
+
+
+
 songQueue = []
 tabID = 0;
 loaded = true;
-// iconSwitch = true;
-// downloadIconID = 0;
+
 var youtubeKey = "AIzaSyCP0UNlO9_N1Pq13E6Rl8gIwAjnF_zqNO4"
 
 //Creates url objects used in updating tab url
@@ -12,6 +14,7 @@ function makeNextSong(){
 	}
 	return url;
 }
+
 //Creates download url object
 function makeDwnObj(url, saveOption, name = ""){
 	console.log("name" + name);
@@ -33,6 +36,7 @@ function makeDwnObj(url, saveOption, name = ""){
 	}
 	return obj;
 }
+
 var HttpClient = function() {
     this.get = function(aUrl, aCallback) {
         var anHttpRequest = new XMLHttpRequest();
@@ -50,6 +54,8 @@ function parseURL(json){
 	url = json['link'];
 	chrome.tabs.update(tabID, makeDwnObj(url, true));
 }
+
+//Gets the youtube ID of the next video in queue
 function getID(url){
 	id = url.substring(url.search("v=")+2);
 	timeMarker = id.search("&t=");
@@ -59,59 +65,19 @@ function getID(url){
 	console.log("ID of video to display: " + id);
 	return id
 }
+
+//Creates the song title notification
 function makeNoti(strMessage){
 	var notification = {
 		type: "basic",
-		iconUrl: "menu.png",//"C:\\Users\\Keith\\Music\\Downloads\\icon.png",
+		iconUrl: "menu.png",
 		title: "Queued Items",
 		message: strMessage
 	}
-	// if(icon){
-	// 	notification.iconUrl = "C:\\Users\\Keith\\Music\\Downloads\\icon.png"
-	// }
-	// else{
-	// 	notification.iconUrl = "C:\\Users\\Keith\\Music\\Downloads\\icon1.png"
-	// }
-	// if(strMessage == "• No items queued"){
-	// 	notification.iconUrl = "menu.png";
-	// }
 	chrome.notifications.create("qNoti", notification);
 }
-function checkIcon(downloadDelta){
-	if(downloadDelta.id == downloadIconID){
-		if(downloadDelta.state.current == 'complete'){
-			options = {
-				iconUrl: "C:\\Users\\Keith\\Music\\Downloads\\icon.png"
-			}
-			console.log("updated notification successfully");
-			chrome.notifications.update("qNoti", options)
-		}
-	}
-}
-function updateIcon(){
-	iconSwitch = !iconSwitch;
-	if(iconSwitch){
-		var name = "icon.png";
-	}
-	else{
-		var name = "icon1.png";
-	}
-	console.log("Update Icon called");
-	iconUrl = "";
-	var video = getVideoObj(getID(songQueue[0]),
-	function(response){
-		response = JSON.parse(response);
-		iconUrl = response["items"][0]["snippet"]["thumbnails"]["default"]["url"]
-		chrome.downloads.download(makeDwnObj(iconUrl, false, name),
-		function(id){
-			downloadIconID = id;
-		})
-			// var toErase = {
-			// 	id: id
-			// }
-			// chrome.downloads.erase(toErase)
-	});
-}
+
+//Gets info about next video
 function getVideoObj(id,callback){
 	var request = new HttpClient();
 	request.get(("https://www.googleapis.com/youtube/v3/videos?id=" +
@@ -121,6 +87,7 @@ function getVideoObj(id,callback){
 		callback(response);
 	})
 }
+
 //determines which context Menu clicked, acts accordingly
 function onClickHandler(info, tab){
 	tabID = tab.id;
@@ -180,7 +147,9 @@ function onClickHandler(info, tab){
 		}
 	}
 	else if (info.menuItemId == "nxtQ"){
+		loaded = false;
 		chrome.tabs.update(tabID, makeNextSong());
+		songQueue.shift();
 	}
 }
 
@@ -198,12 +167,9 @@ function onUpdated(tabId, changeInfo, tab){
 			chrome.tabs.update(tabID, makeNextSong());
 			songQueue.shift();
 	}// determines when the next tab has finished loading and is playing music
-	else if(changeInfo.audible && tabId == tabID){
+	else if(changeInfo.audible && tabId == tabID && changeInfo.status == "complete"){
 			loaded = true;
 			console.log("reset 'loaded' boolean");
-			// if(songQueue.length > 0){
-			// 	updateIcon();
-			// }
 		}
 }
 
@@ -211,7 +177,7 @@ function onUpdated(tabId, changeInfo, tab){
 var addQItemMenu = chrome.contextMenus.create({"title": "Add to queue", "id": "addItem",
  	"contexts": ["link"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 var downloadItemMenu = chrome.contextMenus.create({"title": "Download Video", "id": "downloadItem",
- 	"contexts": ["link", "video"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
+ 	"contexts": [/*"link", */"video"], "documentUrlPatterns": ["*://www.youtube.com/*"]}); //"link" commented so no dropdown menu on vid right click, it's just easier this way
 var clearQ = chrome.contextMenus.create({"title": "Clear Queue", "id": "clearItems",
 	"contexts": ["page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 var showQ = chrome.contextMenus.create({"title": "Display Queue", "id": "showItems",
@@ -221,4 +187,3 @@ var next = chrome.contextMenus.create({"title": "Next in queue", "id": "nxtQ",
 
 chrome.contextMenus.onClicked.addListener(onClickHandler);
 chrome.tabs.onUpdated.addListener(onUpdated);
-// chrome.downloads.onChanged.addListener(checkIcon);
