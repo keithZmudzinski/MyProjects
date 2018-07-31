@@ -2,13 +2,26 @@
 
 
 songQueue = []
+hiddenQueue = []
 tabID = 0;
 loaded = true;
+nQUsed = false;
 
 var youtubeKey = "AIzaSyCP0UNlO9_N1Pq13E6Rl8gIwAjnF_zqNO4"
 
+
+function updateQueues(){
+	if(hiddenQueue.length != 0){
+		songQueue[0] = hiddenQueue[0];
+		hiddenQueue.shift();
+	}
+}
+
 //Creates url objects used in updating tab url
 function makeNextSong(){
+	if(songQueue && songQueue.length == 0){
+		updateQueues();
+	}
 	var url = {
 		url: songQueue[0]
 	}
@@ -92,11 +105,7 @@ function getVideoObj(id,callback){
 function onClickHandler(info, tab){
 	tabID = tab.id;
 	if(info.menuItemId == "addItem"){
-		songQueue.push(info.linkUrl);
-		//calls updateIcon if songQueue goes from empty to having an item
-		// if(songQueue.length == 1){
-		// 	updateIcon();
-		// }
+		hiddenQueue.push(info.linkUrl);
 	}
 	else if (info.menuItemId == "downloadItem"){
 		//allows for downloading suggested videos or current video
@@ -117,17 +126,17 @@ function onClickHandler(info, tab){
 		});
 	}
 	else if (info.menuItemId == "clearItems"){
-		songQueue = [];
+		hiddenQueue = [];
 	}
 	else if (info.menuItemId == "showItems"){
-		if(songQueue.length != 0){
+		if(hiddenQueue.length != 0){
 			var queueItems = [];
 			var songID;
 			var videoData;
 			var stringItems = "";
 			var request = new HttpClient();
-			for (var i = 0; i < songQueue.length; i++){
-				songID = getID(songQueue[i]);
+			for (var i = 0; i < hiddenQueue.length; i++){
+				songID = getID(hiddenQueue[i]);
 				request.get(("https://www.googleapis.com/youtube/v3/videos?id=" +
 				songID +
 				"&key=" + youtubeKey +
@@ -136,7 +145,7 @@ function onClickHandler(info, tab){
 					var response = JSON.parse(response);
 					queueItems.push('• ' + response["items"][0]["snippet"]["title"] + '\n');
 					stringItems += '• ' + response["items"][0]["snippet"]["title"] + '\n';
-					if(queueItems.length == songQueue.length){
+					if(queueItems.length == hiddenQueue.length){
 						makeNoti(stringItems);					//.get() is asynch, can't figure out
 					}											// callbacks to make notification after for loop completes
 				})
@@ -148,8 +157,10 @@ function onClickHandler(info, tab){
 	}
 	else if (info.menuItemId == "nxtQ"){
 		loaded = false;
+		nQUsed = true;
 		chrome.tabs.update(tabID, makeNextSong());
 		songQueue.shift();
+		nQUsed = false;
 	}
 }
 
@@ -167,8 +178,10 @@ function onUpdated(tabId, changeInfo, tab){
 			chrome.tabs.update(tabID, makeNextSong());
 			songQueue.shift();
 	}// determines when the next tab has finished loading and is playing music
-	else if(changeInfo.audible && tabId == tabID && changeInfo.status == "complete"){
+	else if(changeInfo.audible && tabId == tabID && !nQUsed){
 			loaded = true;
+
+			//updateQueues();
 			console.log("reset 'loaded' boolean");
 		}
 }
