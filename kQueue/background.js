@@ -3,7 +3,7 @@
 
 songQueue = []
 hiddenQueue = []
-tabID = 0;
+mainTabId = -1;
 loaded = true;
 nQUsed = false;
 
@@ -65,7 +65,7 @@ var HttpClient = function() {
 
 function parseURL(json){
 	url = json['link'];
-	chrome.tabs.update(tabID, makeDwnObj(url, true));
+	chrome.tabs.update(mainTabId, makeDwnObj(url, true));
 }
 
 //Gets the youtube ID of the next video in queue
@@ -103,64 +103,77 @@ function getVideoObj(id,callback){
 
 //determines which context Menu clicked, acts accordingly
 function onClickHandler(info, tab){
-	tabID = tab.id;
-	if(info.menuItemId == "addItem"){
-		hiddenQueue.push(info.linkUrl);
+	if (info.menuItemId == "mainTab"){
+		mainTabId = tab.id;
 	}
-	else if (info.menuItemId == "downloadItem"){
-		//allows for downloading suggested videos or current video
-		if(info.mediaType == "video"){
-			dwnURL = info.pageUrl;
+	else if(mainTabId != -1){
+		//mainTabId = tab.id;
+		if(info.menuItemId == "addItem"){
+			hiddenQueue.push(info.linkUrl);
 		}
-		else{
-			dwnURL = info.linkUrl;
-		}
+		else if (info.menuItemId == "downloadItem"){
+			//allows for downloading suggested videos or current video
+			if(info.mediaType == "video"){
+				dwnURL = info.pageUrl;
+			}
+			else{
+				dwnURL = info.linkUrl;
+			}
 
-		var client = new HttpClient();
-		client.get(("http://www.youtubeinmp3.com/fetch/?format=JSON&video=" + dwnURL),
-		function(response){
-			console.log("Response: " + response);
-			var response = JSON.parse(response);
-			link = response['link'];
-			chrome.downloads.download(makeDwnObj(link, true));
-		});
-	}
-	else if (info.menuItemId == "clearItems"){
-		hiddenQueue = [];
-	}
-	else if (info.menuItemId == "showItems"){
-		if(hiddenQueue.length != 0){
-			var queueItems = [];
-			var songID;
-			var videoData;
-			var stringItems = "";
-			var request = new HttpClient();
-			for (var i = 0; i < hiddenQueue.length; i++){
-				songID = getID(hiddenQueue[i]);
-				request.get(("https://www.googleapis.com/youtube/v3/videos?id=" +
-				songID +
-				"&key=" + youtubeKey +
-				"&part=snippet"),
-				function(response){
-					var response = JSON.parse(response);
-					queueItems.push('• ' + response["items"][0]["snippet"]["title"] + '\n');
-					stringItems += '• ' + response["items"][0]["snippet"]["title"] + '\n';
-					if(queueItems.length == hiddenQueue.length){
-						makeNoti(stringItems);					//.get() is asynch, can't figure out
-					}											// callbacks to make notification after for loop completes
-				})
+			var client = new HttpClient();
+			client.get(("http://www.youtubeinmp3.com/fetch/?format=JSON&video=" + dwnURL),
+			function(response){
+				console.log("Response: " + response);
+				var response = JSON.parse(response);
+				link = response['link'];
+				chrome.downloads.download(makeDwnObj(link, true));
+			});
+		}
+		else if (info.menuItemId == "clearItems"){
+			hiddenQueue = [];
+		}
+		else if (info.menuItemId == "showItems"){
+			if(hiddenQueue.length != 0){
+				var queueItems = [];
+				var songID;
+				var videoData;
+				var stringItems = "";
+				var request = new HttpClient();
+				for (var i = 0; i < hiddenQueue.length; i++){
+					songID = getID(hiddenQueue[i]);
+					request.get(("https://www.googleapis.com/youtube/v3/videos?id=" +
+					songID +
+					"&key=" + youtubeKey +
+					"&part=snippet"),
+					function(response){
+						var response = JSON.parse(response);
+						queueItems.push('• ' + response["items"][0]["snippet"]["title"] + '\n');
+						stringItems += '• ' + response["items"][0]["snippet"]["title"] + '\n';
+						if(queueItems.length == hiddenQueue.length){
+							makeNoti(stringItems);					//.get() is asynch, can't figure out
+						}											// callbacks to make notification after for loop completes
+					})
+				}
+			}
+			else{
+				makeNoti("• No items queued")
 			}
 		}
-		else{
-			makeNoti("• No items queued")
+		else if (info.menuItemId == "nxtQ"){
+			if(hiddenQueue.length != 0){
+				loaded = false;
+				nQUsed = true;
+				chrome.tabs.update(mainTabId, makeNextSong());
+				songQueue.shift();
+				nQUsed = false;
+			}
+			else{
+				makeNoti("• No items queued")
+			}
 		}
 	}
-	else if (info.menuItemId == "nxtQ"){
-		loaded = false;
-		nQUsed = true;
-		chrome.tabs.update(tabID, makeNextSong());
-		songQueue.shift();
-		nQUsed = false;
+	else{
+		makeNoti("Set Main Tab first");
 	}
 }
 
@@ -170,15 +183,17 @@ function onUpdated(tabId, changeInfo, tab){
 	console.log("updated tab id  = " + tabId);
 	// Determines if tab should go to next song in queue
 	if(!(changeInfo.audible)
-	 	&& tabId == tabID
+	 	&& tabId == mainTabId
 	 	&& changeInfo.status == "complete"
 		&& loaded){
 			console.log("Song has ended");
 			loaded = false;
-			chrome.tabs.update(tabID, makeNextSong());
+			chrome.tabs.update(mainTabId, makeNextSong());
 			songQueue.shift();
 	}// determines when the next tab has finished loading and is playing music
-	else if(changeInfo.audible && tabId == tabID && !nQUsed){
+	else if(changeInfo.audible
+		&& tabId == mainTabId
+		&& !nQUsed){
 			loaded = true;
 
 			//updateQueues();
@@ -196,6 +211,8 @@ var clearQ = chrome.contextMenus.create({"title": "Clear Queue", "id": "clearIte
 var showQ = chrome.contextMenus.create({"title": "Display Queue", "id": "showItems",
 	"contexts": ["page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 var next = chrome.contextMenus.create({"title": "Next in queue", "id": "nxtQ",
+	"contexts": ["page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
+var mainTabSet = chrome.contextMenus.create({"title": "Set as main tab", "id": "mainTab",
 	"contexts": ["page"], "documentUrlPatterns": ["*://www.youtube.com/*"]});
 
 chrome.contextMenus.onClicked.addListener(onClickHandler);
